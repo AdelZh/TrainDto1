@@ -5,11 +5,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import peaksoft.dto.period.PeriodTrainingsList;
+import peaksoft.dto.period.ResponseTrainers;
 import peaksoft.dto.trainee.*;
-import peaksoft.dto.trainer.TrainerProfileRes2;
 import peaksoft.dto.user.SimpleResponse;
 import peaksoft.entity.Trainee;
-import peaksoft.entity.Trainer;
 import peaksoft.entity.User;
 import peaksoft.repo.TraineeRepo;
 import peaksoft.service.TraineeService;
@@ -24,8 +24,6 @@ public class TraineeApi {
 
     private final TraineeService traineeService;
     private final TraineeRepo traineeRepo;
-
-
 
 
     @PostMapping("/create1")
@@ -56,46 +54,49 @@ public class TraineeApi {
 
 
     @GetMapping("/profile")
-    public TraineeProfileRes getTraineeProfile(@RequestParam String username) {
-        return traineeService.getTraineeProfile(username);
+    public TraineeProfileRes getTraineeProfile(@RequestBody ActivateRequest activateRequest) {
+        return traineeService.getTraineeProfile(activateRequest);
 
     }
 
-    @PutMapping("/update/{id}")
+
+
+    @PutMapping("/update")
     public ResponseEntity<TraineeProfileRes> updateTraineeProfile(
-            @PathVariable Long id,
             @RequestBody UpdateRequest updateRequest) {
-        TraineeProfileRes updatedProfile = traineeService.update(id, updateRequest);
+        TraineeProfileRes updatedProfile = traineeService.update( updateRequest);
         return ResponseEntity.ok(updatedProfile);
     }
 
 
     @DeleteMapping("/delete")
-    public SimpleResponse delete(@RequestParam String userName) {
-        return traineeService.delete(userName);
+    public SimpleResponse delete(@RequestBody ActivateRequest activateRequest) {
+        return traineeService.delete(activateRequest);
     }
 
 
-    @GetMapping("/not-assigned")
-    public TrainerProfileRes2 getNotAssignedTrainer(@RequestParam String username) {
-        return traineeService.getNotAssignedTrainer(username);
-    }
 
 
-    @PatchMapping("/activate-deactivate-trainee/{id}")
-    public ResponseEntity<SimpleResponse> activateDeactivateTrainee(@RequestBody ActivateRequest activateRequest, @PathVariable Long id) {
-        SimpleResponse response = traineeService.activateDeactivateTrainee(id,activateRequest);
+    @PatchMapping("/activate-deactivate-trainee")
+    public ResponseEntity<SimpleResponse> activateDeactivateTrainee(@RequestBody ActivateRequest activateRequest) {
+        SimpleResponse response = traineeService.activateDeactivateTrainee(activateRequest);
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{traineeId}/update-trainers")
+    @PutMapping("/update-trainers")
     public ResponseEntity<Update2Response> updateTrainersList(
-            @PathVariable Long traineeId,
             @RequestBody @Valid UpdateRequest2 updateRequest
     ) {
-        Update2Response response = traineeService.updateTrainersList(traineeId, updateRequest);
+        Update2Response response = traineeService.updateTrainersList( updateRequest);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/getTrainings")
+    public ResponseEntity<List<ResponseTrainers>> getTrainings(@RequestBody PeriodTrainingsList periodTrainingsList) {
+        List<ResponseTrainers> trainings = traineeService.getTrainings(periodTrainingsList);
+        return ResponseEntity.ok(trainings);
+
+}
 }
 
 

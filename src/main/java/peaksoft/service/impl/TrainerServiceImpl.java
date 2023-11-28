@@ -6,20 +6,28 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import peaksoft.dto.period.PeriodTrainingsList;
+import peaksoft.dto.period.ResponseTrainers;
+import peaksoft.dto.period2.ResponseTrainee;
 import peaksoft.dto.trainee.ActivateRequest;
+import peaksoft.dto.trainee.TraineeProfileRes;
+import peaksoft.dto.trainee.Update2Response;
 import peaksoft.dto.trainee.UpdateRequest;
 import peaksoft.dto.trainer.TrainerProfileRes;
 import peaksoft.dto.trainer.TrainerProfileRes2;
 import peaksoft.dto.trainer.TrainerRequest;
 import peaksoft.dto.trainer.TrainerResponse;
 import peaksoft.dto.user.SimpleResponse;
-import peaksoft.entity.Specialization;
-import peaksoft.entity.Trainee;
-import peaksoft.entity.Trainer;
-import peaksoft.entity.User;
+import peaksoft.entity.*;
 import peaksoft.repo.TraineeRepo;
 import peaksoft.repo.TrainerRepo;
 import peaksoft.service.TrainerService;
+
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -61,15 +69,24 @@ public class TrainerServiceImpl implements TrainerService {
 
 
     @Override
-    public TrainerProfileRes getTrainerProfile(String username) {
-        return trainerRepo.findByUser_UserName(username).orElseThrow(EntityNotFoundException::new);
+    public TrainerProfileRes getTrainerProfile(UpdateRequest updateRequest) {
+        Trainer trainer = trainerRepo.findTraineeByUser_Username(updateRequest.getUserName());
 
+        User user = trainer.getUser();
+
+        return new TrainerProfileRes(
+                user.getFirstName(),
+                user.getLastName(),
+                user.isActive(),
+                trainer.getSpecialization(),
+                trainer.getTrainees()
+        );
     }
 
 
     @Override
-    public TrainerProfileRes update(Long id, UpdateRequest updateRequest) {
-        Trainer trainer = trainerRepo.findById(id).orElseThrow(EntityNotFoundException::new);
+    public TrainerProfileRes update(UpdateRequest updateRequest) {
+        Trainer trainer = trainerRepo.findTraineeByUser_Username(updateRequest.getUserName());
         User user = trainer.getUser();
         user.setUserName(updateRequest.getUserName());
         user.setFirstName(updateRequest.getFirstName());
@@ -87,15 +104,35 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
-    public SimpleResponse activateDeactivateTrainer(Long Id, ActivateRequest activateRequest) {
-        Trainer trainee = trainerRepo.getTraineeById(Id)
-                .orElseThrow(() -> new EntityNotFoundException("Trainee not found with id: " + Id));
+    public SimpleResponse activateDeactivateTrainer(ActivateRequest activateRequest) {
+        Trainer trainer = trainerRepo.findTraineeByUser_Username(activateRequest.getUserName());
 
-        trainee.getUser().setActive(activateRequest.getIsActive());
-        trainerRepo.save(trainee);
+        trainer.getUser().setActive(activateRequest.getIsActive());
+        trainerRepo.save(trainer);
         return new SimpleResponse(HttpStatus.OK, "200 ok");
     }
 
 
+    @Override
+    public List<ResponseTrainee> getTrainings(PeriodTrainingsList periodTrainingsList){
+        Trainer trainer = trainerRepo.findTraineeByUser_Username(periodTrainingsList.getUserName());
 
+        List<String> trainings1 = Collections.singletonList(periodTrainingsList.getUserName());
+        List<Training> trainings = trainerRepo.findByTraining_UserNameIn(trainings1);
+
+        LocalDate periodFrom = periodTrainingsList.getPeriodFrom();
+        LocalDate periodTo = periodTrainingsList.getPeriodTo();
+
+        long durationInDays = ChronoUnit.DAYS.between(periodFrom, periodTo);
+
+
+        return trainings.stream()
+                .map(training -> new ResponseTrainee(
+                        training.getTrainingName(),
+                        training.getTrainingDate(),
+                        (int) durationInDays,
+                        training.getTrainer().getUser().getFirstName()
+                ))
+                .collect(Collectors.toList());
+    }
 }

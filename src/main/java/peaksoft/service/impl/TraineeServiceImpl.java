@@ -1,23 +1,24 @@
 package peaksoft.service.impl;
 
 
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import peaksoft.dto.period.PeriodTrainingsList;
+import peaksoft.dto.period.ResponseTrainers;
 import peaksoft.dto.trainee.*;
-import peaksoft.dto.trainer.TrainerProfileRes;
-import peaksoft.dto.trainer.TrainerProfileRes2;
 import peaksoft.dto.user.SimpleResponse;
 import peaksoft.entity.Trainee;
 import peaksoft.entity.Trainer;
+import peaksoft.entity.Training;
 import peaksoft.entity.User;
 import peaksoft.repo.TraineeRepo;
 import peaksoft.repo.TrainerRepo;
 import peaksoft.service.TraineeService;
 
-import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -58,8 +59,9 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    public TraineeProfileRes getTraineeProfile(String username) {
-        Trainee trainee=traineeRepo.getTraineeByUserUserName(username).orElseThrow(EntityNotFoundException::new);
+    public TraineeProfileRes getTraineeProfile(ActivateRequest activateRequest) {
+        Trainee trainee = traineeRepo.findTraineeByUser_Username(activateRequest.getUserName());
+
         User user = trainee.getUser();
 
         return new TraineeProfileRes(
@@ -69,16 +71,13 @@ public class TraineeServiceImpl implements TraineeService {
                 trainee.getAddress(),
                 trainee.getDateOfBirth(),
                 trainee.getTrainers()
-
         );
     }
 
 
-
     @Override
-    public TraineeProfileRes update(Long id, UpdateRequest updateRequest) {
-        Trainee trainee = traineeRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Trainee not found with id: " + id));
+    public TraineeProfileRes update(UpdateRequest updateRequest) {
+        Trainee trainee = traineeRepo.findTraineeByUser_Username(updateRequest.getUserName());
 
         trainee.setDateOfBirth(updateRequest.getDateOfBirth());
         trainee.setAddress(updateRequest.getAddress());
@@ -102,10 +101,8 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    public SimpleResponse delete(String username) {
-        Trainee trainee = traineeRepo.getTraineeByUserUserName(username)
-                .orElseThrow(() -> new EntityNotFoundException("Trainee not found with username: " + username));
-
+    public SimpleResponse delete(ActivateRequest activateRequest) {
+        Trainee trainee = traineeRepo.findTraineeByUser_Username(activateRequest.getUserName());
         traineeRepo.delete(trainee);
         return new SimpleResponse(HttpStatus.OK, "Trainee deleted successfully");
 
@@ -113,32 +110,29 @@ public class TraineeServiceImpl implements TraineeService {
 
 
     @Override
-    public SimpleResponse activateDeactivateTrainee(Long Id, ActivateRequest activateRequest) {
-        Trainee trainee = traineeRepo.findById(Id)
-                .orElseThrow(() -> new EntityNotFoundException("Trainee not found with id: " + Id));
-
+    public SimpleResponse activateDeactivateTrainee(ActivateRequest activateRequest) {
+        Trainee trainee = traineeRepo.findTraineeByUser_Username(activateRequest.getUserName());
         trainee.getUser().setActive(activateRequest.getIsActive());
         traineeRepo.save(trainee);
         return new SimpleResponse(HttpStatus.OK, "200 ok");
     }
 
 
-
     @Override
-    public TrainerProfileRes2 getNotAssignedTrainer(String username) {
-        return null;
-    }
+    public Update2Response updateTrainersList(UpdateRequest2 updateRequest) {
+        Trainee trainee = traineeRepo.findTraineeByUser_Username(updateRequest.getTraineeUsername());
 
-
-    @Override
-    public Update2Response updateTrainersList(Long traineeId, UpdateRequest2 updateRequest) {
-        Trainee trainee = traineeRepo.findById(traineeId)
-                .orElseThrow(() -> new EntityNotFoundException("Trainee not found with ID: " + traineeId));
 
         List<String> trainersUsername = updateRequest.getUsernames();
         List<Trainer> trainers = trainerRepo.findByUser_UserNameIn(trainersUsername);
+        List<Trainer> exist = trainee.getTrainers();
         trainee.setTrainers(trainers);
+
+
+        exist.addAll(trainers);
+        trainee.setTrainers(exist);
         traineeRepo.save(trainee);
+
         List<Update2Response> updateResponses = trainers.stream()
                 .map(trainer -> new Update2Response(
                         trainer.getUser().getFirstName(),
@@ -148,9 +142,33 @@ public class TraineeServiceImpl implements TraineeService {
                 ))
                 .collect(Collectors.toList());
 
-
-
         return new Update2Response(updateResponses);
+    }
+
+
+
+
+    @Override
+    public List<ResponseTrainers> getTrainings(PeriodTrainingsList periodTrainingsList) {
+        Trainee trainee = traineeRepo.findTraineeByUser_Username(periodTrainingsList.getUserName());
+
+        List<String> trainings1 = Collections.singletonList(periodTrainingsList.getUserName());
+        List<Training> trainings = traineeRepo.findByTraining_UserNameIn(trainings1);
+
+        LocalDate periodFrom = periodTrainingsList.getPeriodFrom();
+        LocalDate periodTo = periodTrainingsList.getPeriodTo();
+
+        long durationInDays = ChronoUnit.DAYS.between(periodFrom, periodTo);
+
+
+        return trainings.stream()
+                .map(training -> new ResponseTrainers(
+                        training.getTrainingName(),
+                        training.getTrainingDate(),
+                        (int) durationInDays,
+                        training.getTrainer().getUser().getFirstName()
+                ))
+                .collect(Collectors.toList());
     }
 }
 

@@ -2,6 +2,7 @@ package peaksoft.dto.trainee;
 
 import lombok.Getter;
 import lombok.Setter;
+import peaksoft.entity.Specialization;
 import peaksoft.entity.Trainee;
 import peaksoft.entity.Trainer;
 import peaksoft.entity.User;
@@ -38,4 +39,5 @@ public class TraineeProfileRes extends Trainee {
         this.dateOfBirth = dateOfBirth;
         this.trainers = trainers;
     }
+
 }

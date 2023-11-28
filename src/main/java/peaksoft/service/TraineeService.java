@@ -1,8 +1,8 @@
 package peaksoft.service;
 
-import org.aspectj.weaver.SimpleAnnotationValue;
+import peaksoft.dto.period.PeriodTrainingsList;
+import peaksoft.dto.period.ResponseTrainers;
 import peaksoft.dto.trainee.*;
-import peaksoft.dto.trainer.TrainerProfileRes2;
 import peaksoft.dto.user.SimpleResponse;
 
 import java.util.List;
@@ -11,15 +11,18 @@ import java.util.List;
 public interface TraineeService {
 
 
+
+    List<ResponseTrainers> getTrainings(PeriodTrainingsList periodTrainingsList);
     TraineeResponse saveTrainee(TraineeRequest traineeRequest);
-    TraineeProfileRes getTraineeProfile(String username);
-    TraineeProfileRes update(Long id, UpdateRequest updateRequest);
+    TraineeProfileRes getTraineeProfile(ActivateRequest activateRequest);
+    TraineeProfileRes update( UpdateRequest updateRequest);
 
-    SimpleResponse delete(String username);
-    SimpleResponse activateDeactivateTrainee(Long Id, ActivateRequest activateRequest);
+    SimpleResponse delete(ActivateRequest activateRequest);
 
-    TrainerProfileRes2 getNotAssignedTrainer(String username);
-    Update2Response updateTrainersList(Long traineeId, UpdateRequest2 updateRequest);
+    SimpleResponse activateDeactivateTrainee( ActivateRequest activateRequest);
+
+    Update2Response updateTrainersList(UpdateRequest2 updateRequest);
+
 
 
 }
