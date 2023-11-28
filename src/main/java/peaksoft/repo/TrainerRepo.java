@@ -9,6 +9,7 @@ import peaksoft.dto.trainer.TrainerProfileRes;
 import peaksoft.dto.trainer.TrainerProfileRes2;
 import peaksoft.entity.Trainee;
 import peaksoft.entity.Trainer;
+import peaksoft.entity.Training;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,24 +25,22 @@ public interface TrainerRepo extends JpaRepository<Trainer, Long> {
 
     Optional<Trainer> getTrainerByUserUserName(@Param("userName") String username);
 
-
-
     @Query("SELECT t FROM Trainer t WHERE t.id = :id")
     Optional<Trainer> getTraineeById(Long id);
 
-
-
-   /* @Query("SELECT t FROM Trainer t " +
-            "WHERE NOT EXISTS (SELECT 1 FROM t.trainees trainee WHERE trainee.id = :traineeId) " +
-            "AND t.user.isActive = true")
-   Trainer findNotAssignedTrainers(@Param("traineeId") Long traineeId);
-
-    */
-   @Query("SELECT t FROM Trainer t WHERE t.user.isActive = true")
-   List<Trainer> findActiveTrainer();
+    @Query("SELECT t FROM Trainer t WHERE t.user.isActive = true")
+    List<Trainer> findActiveTrainer();
 
     @Query("select t from Trainer t join t.user u where u.userName in :usernames")
     List<Trainer> findByUser_UserNameIn(@Param("usernames") List<String> usernames);
+
+    @Query("SELECT t FROM Trainer t JOIN t.user u WHERE u.userName = :username")
+    Trainer findTraineeByUser_Username(@Param("username") String username);
+
+
+    @Query("select t from Training t join t.trainer.user u where u.userName in :usernames")
+    List<Training> findByTraining_UserNameIn(@Param("usernames") List<String> usernames);
+
 
 
 }

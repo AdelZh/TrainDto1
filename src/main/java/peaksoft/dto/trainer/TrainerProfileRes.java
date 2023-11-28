@@ -38,4 +38,12 @@ public class TrainerProfileRes {
         this.trainees=trainees;
         this.specialization=specialization;
     }
+
+    public TrainerProfileRes(String firstName, String lastName, boolean active, Specialization specialization, List<Trainee> trainees) {
+        this.firstName=firstName;
+        this.lastName=lastName;
+        this.isActive=active;
+        this.specialization=specialization;
+        this.trainees=trainees;
+    }
 }
